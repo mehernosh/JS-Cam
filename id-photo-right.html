@@ -12,7 +12,7 @@
       #viewfinder-container{
         position: relative;
         overflow: hidden;
-        height:90vh;
+        height:90%;
         margin: 1vh 1vw; 
       }
       #overlay-border{
@@ -21,10 +21,6 @@
         height: 100%;
         padding: 0;
         margin: 0;
-        /*border-top: 20vh solid rgba(200, 200, 200, 0.5); 
-        border-bottom: 20vh solid rgba(200, 200, 200, 0.5); 
-        border-left: 20vw solid rgba(200, 200, 200, 0.5); 
-        border-right: 20vw solid rgba(200, 200, 200, 0.5); */
       }
       #overlay-box{
         width: 100%;
@@ -145,9 +141,20 @@
 
         function init_viewfinder(){
           var front = false;
-          
+          var on_phone = false;
           var major_dimen = { min: 1024, ideal: 1280, max: 1920 };
           var minor_dimen = { min: 576, ideal: 720, max: 1080 };
+          if(navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/iPhone/i)){
+            on_phone = true;
+          }
+          if(on_phone) {
+            if(window.innerHeight> window.innerWidth)
+              $("#viewfinder-container").css("height",window.innerHeight*0.95+"px")
+          }else{
+            $(".container-fluid").css("width", (window.innerWidth*0.8)+"px");
+            $(".container-fluid").css("height", (window.innerWidth*720*0.8/1280)+"px");
+          }
+
           var mediaConfig = { 
             video: { 
               facingMode: (front? "user" : "environment"),
