@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <title></title>
+    <style type="text/css">
+      #viewfinder-container{
+        position: relative;
+        overflow: hidden;
+        height:90vh;
+        margin: 1vh 1vw; 
+      }
+      #overlay-border{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        /*border-top: 20vh solid rgba(200, 200, 200, 0.5); 
+        border-bottom: 20vh solid rgba(200, 200, 200, 0.5); 
+        border-left: 20vw solid rgba(200, 200, 200, 0.5); 
+        border-right: 20vw solid rgba(200, 200, 200, 0.5); */
+      }
+      #overlay-box{
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        border:3px solid green;
+        position: relative;
+      }
+      .photo-box{
+        position: absolute;
+        border: 1px solid green;
+        border-radius: 13px;
+      }
+      .photo-box.vertical {
+        bottom: 5%;
+        right: 15%;
+        height: 30%;
+        width: 60%;
+      }
+      .photo-box.horizontal {
+        right: 5%;
+        top: 15%;
+        width: 30%;
+        height: 60%;
+      }
+      #viewfinder{
+        width: 100%; 
+        height: 100%;
+      }
+      #capture-btn{
+        position: absolute;
+        z-index: 100;
+      }
+      #preview{
+        max-width: 60%;
+        max-height: 60%
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-xs-12">
+          <div id="viewfinder-container">
+            <div id="overlay-border">
+              <div id="overlay-box">
+                <div class="photo-box horizontal d-none"></div>
+                <div class="photo-box vertical d-none"></div>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="capture-btn">
+              O
+            </button>
+            <video id="viewfinder" autoplay>
+            </video>
+          </div>
+          <div id="result" class="d-none">
+            <canvas id="vfcanvas"></canvas>
+            <img id="preview">
+            <a download="captured.png" class="btn btn-success" id="save-btn">Save</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      $(function(){
+
+        var vfcontainer = $("#viewfinder-container")[0];
+        var ob = $("#overlay-border")[0];
+        var vf = $("#viewfinder")[0]
+        var canvas = $('#vfcanvas')[0];
+
+        window.addEventListener("orientationchange", function() {
+          alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+          window.location.reload();
+        });
+
+        //var vfc = $("#vfcanvas")[0];
+        $("#viewfinder").on("loadeddata", function(evt){
+          draw_box();
+        })
+
+        function draw_box(){
+          var streamw = vf.videoWidth;
+          var streamh = vf.videoHeight;
+          var vfw = vf.clientWidth;
+          var vfh = vf.clientHeight;
+          var obw = ob.offsetWidth;
+          var obh = ob.offsetHeight;
+
+          var idw = 856.0;
+          var idh = 540.0;
+          var vf_orientation = vfh>vfw ? "vertical" : "horizontal";
+          var boxh, boxw, verticaloffset, horizontaloffset;
+          if (vf_orientation === "horizontal"){
+            boxh = vfh*0.7;
+            boxw = boxh*idw/idh;
+            // verticaloffset = "" + parseInt((obh-boxh)/2);
+            // horizontaloffset = "" + parseInt((obw-boxw)/2);
+            $("#capture-btn").css("height", "100%").css("bottom","0").css("right", "0")
+          }else{
+            boxh = vfh*0.7;
+            boxw = boxh*idh/idw;
+            // verticaloffset = "" + parseInt((obw-boxh)/2);
+            // horizontaloffset = "" + parseInt((obh-boxw)/2);
+            $("#capture-btn").css("width", "100%").css("bottom","0").css("right", "0")
+          }
+          verticaloffset = "" + parseInt((obh-boxh)/2);
+          horizontaloffset = "" + parseInt((obw-boxw)/2);
+          $(ob).css(
+            "border-width", verticaloffset+"px "+horizontaloffset+"px").css(
+            "border-style", "solid").css(
+            "border-color", "rgba(253, 45, 45, 0.61)");
+          $(".photo-box."+vf_orientation).removeClass("d-none");
+        }
+
+        function init_viewfinder(){
+          var front = false;
+          
+          var major_dimen = { min: 1024, ideal: 1280, max: 1920 };
+          var minor_dimen = { min: 576, ideal: 720, max: 1080 };
+          var mediaConfig = { 
+            video: { 
+              facingMode: (front? "user" : "environment"),
+              width: major_dimen,
+              height: minor_dimen,
+            },
+          };
+          //vfc.height = vfcontainer.clientHeight;
+          //vfc.width = vfcontainer.clientWidth;
+
+          if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Not adding `{ audio: true }` since we only want video now
+            navigator.mediaDevices.getUserMedia(mediaConfig).then(function(stream) {
+                //video.src = window.URL.createObjectURL(stream);
+                vf.srcObject = stream;
+                window.vfstram = stream;
+                vf.play();
+            });
+          }
+        }
+        $("#capture-btn").click(function(evt){
+          evt.preventDefault();
+          $("#result").removeClass("d-none");
+          canvas.width = vf.videoWidth;
+          canvas.height = vf.videoHeight;
+          var context = canvas.getContext('2d');
+          context.drawImage(vf, 0, 0, vf.videoWidth, vf.videoHeight)
+          $(vfcontainer).addClass("d-none");
+          var imgdat = canvas.toDataURL("image/png");
+          $(canvas).addClass("d-none");
+          $("#preview").attr("src", imgdat);
+          $("#save-btn").attr("href", imgdat.replace("image/png", "image/octet-stream"));
+        })
+
+        init_viewfinder();
+        // var elem = document.documentElement;
+        // if (elem.requestFullscreen) {
+        //   elem.requestFullscreen();
+        // } else if (elem.mozRequestFullScreen) { /* Firefox */
+        //   elem.mozRequestFullScreen();
+        // } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+        //   elem.webkitRequestFullscreen();
+        // } else if (elem.msRequestFullscreen) { /* IE/Edge */
+        //   elem.msRequestFullscreen();
+        // }
+      });
+    </script>
+  </body>
+</html>
