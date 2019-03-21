@@ -93,7 +93,7 @@
     </div>
     <script type="text/javascript">
       $(function(){
-
+        var vfstram;
         var vfcontainer = $("#viewfinder-container")[0];
         var ob = $("#overlay-border")[0];
         var vf = $("#viewfinder")[0]
@@ -163,7 +163,7 @@
             navigator.mediaDevices.getUserMedia(mediaConfig).then(function(stream) {
                 //video.src = window.URL.createObjectURL(stream);
                 vf.srcObject = stream;
-                window.vfstram = stream;
+                vfstram = stream;
                 vf.play();
             });
           }
@@ -180,6 +180,7 @@
           $(canvas).addClass("d-none");
           $("#preview").attr("src", imgdat);
           $("#save-btn").attr("href", imgdat.replace("image/png", "image/octet-stream"));
+          vfstram.getVideoTracks()[0].stop()
         })
 
         init_viewfinder();
