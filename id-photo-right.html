@@ -27,7 +27,6 @@
         height: 100%;
         padding: 0;
         margin: 0;
-        border:3px solid green;
         position: relative;
       }
       .photo-box{
@@ -56,8 +55,8 @@
         z-index: 100;
       }
       #preview{
-        max-width: 60%;
-        max-height: 60%
+        max-width: 90%;
+        max-height: 90%
       }
     </style>
   </head>
@@ -80,20 +79,32 @@
           </div>
           <div id="result" class="d-none">
             <canvas id="vfcanvas"></canvas>
-            <img id="preview">
+            <img id="preview"><br>
             <a download="captured.png" class="btn btn-success" id="save-btn">Save</a>
           </div>
 
         </div>
       </div>
+      <!-- <div class="row">
+        <div class="col-xs-12">
+          <canvas id="pl" style="border:1px solid black;"></canvas>
+        </div>
+      </div> -->
     </div>
     <script type="text/javascript">
       $(function(){
+        var idw = 856.0; // According to wikipedia the KTP is 
+        var idh = 540.0; // 856mm X 540mm.
         var vfstram;
         var vfcontainer = $("#viewfinder-container")[0];
         var ob = $("#overlay-border")[0];
         var vf = $("#viewfinder")[0]
         var canvas = $('#vfcanvas')[0];
+        var boxh, boxw, verticaloffset, horizontaloffset;
+        var vfw, vfh, obw, obh, vf_orientation;
+        var draw_thickness = 3;
+        var $ob = $("#overlay-box");
+        $ob.css("border", draw_thickness+"px solid green");
 
         window.addEventListener("orientationchange", function() {
           alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
@@ -103,20 +114,19 @@
         //var vfc = $("#vfcanvas")[0];
         $("#viewfinder").on("loadeddata", function(evt){
           draw_box();
+
         })
 
-        function draw_box(){
-          var streamw = vf.videoWidth;
-          var streamh = vf.videoHeight;
-          var vfw = vf.clientWidth;
-          var vfh = vf.clientHeight;
-          var obw = ob.offsetWidth;
-          var obh = ob.offsetHeight;
+        function init_dimensions(){
+          vfw = vf.clientWidth;
+          vfh = vf.clientHeight;
+          obw = ob.offsetWidth;
+          obh = ob.offsetHeight;
+          vf_orientation = vfh>vfw ? "vertical" : "horizontal";
+        }
 
-          var idw = 856.0;
-          var idh = 540.0;
-          var vf_orientation = vfh>vfw ? "vertical" : "horizontal";
-          var boxh, boxw, verticaloffset, horizontaloffset;
+        function draw_box(){
+          init_dimensions();
           if (vf_orientation === "horizontal"){
             boxh = vfh*0.7;
             boxw = boxh*idw/idh;
@@ -130,13 +140,15 @@
             // horizontaloffset = "" + parseInt((obh-boxw)/2);
             $("#capture-btn").css("width", "100%").css("bottom","0").css("right", "0")
           }
-          verticaloffset = "" + parseInt((obh-boxh)/2);
-          horizontaloffset = "" + parseInt((obw-boxw)/2);
+          verticaloffset = (obh-boxh)/2.0;
+          horizontaloffset = (obw-boxw)/2.0;
           $(ob).css(
-            "border-width", verticaloffset+"px "+horizontaloffset+"px").css(
+            "border-width", "" + verticaloffset.toFixed(1)+"px "+horizontaloffset.toFixed(1)+"px").css(
             "border-style", "solid").css(
             "border-color", "rgba(253, 45, 45, 0.61)");
           $(".photo-box."+vf_orientation).removeClass("d-none");
+          canvas.width = vf.videoWidth;
+          canvas.height = vf.videoHeight;
         }
 
         function init_viewfinder(){
@@ -155,7 +167,7 @@
             $(".container-fluid").css("height", (window.innerWidth*720*0.8/1280)+"px");
           }
 
-          var mediaConfig = { 
+          var mediaConfig = {
             video: { 
               facingMode: (front? "user" : "environment"),
               width: major_dimen,
@@ -177,30 +189,46 @@
         }
         $("#capture-btn").click(function(evt){
           evt.preventDefault();
+          var streamw = vf.videoWidth, streamh = vf.videoHeight;
+          var streamratio = (1.0 * streamw)/streamh;
+          var vfratio = (1.0 * vfw)/vfh;
+          var constrained_on = (vfratio > streamratio)? "height" : "width";
+          var stm_aparent_ht, stm_aparent_wd;
+          var horizontalxtra, verticalxtra;
+          var stretch_ratioh = 0, stretch_ratiow = 0;
+          // var drawh = $ob.outerHeight()*streamratio;
+          // var draww = $ob.outerWidth()*streamratio;
+
+          if(constrained_on === "height"){
+            stm_aparent_ht = vfh;
+            stm_aparent_wd = streamratio * stm_aparent_ht;
+            
+          }else{
+            stm_aparent_wd = vfw;
+            stm_aparent_ht = streamratio * stm_aparent_wd;
+          }
+          stretch_ratioh = 1.0 * streamh/stm_aparent_ht;
+          stretch_ratiow = 1.0 * streamw/stm_aparent_wd;
+          verticalxtra = (vfh - stm_aparent_ht) * 0.5 * stretch_ratioh;
+          horizontalxtra = (vfw - stm_aparent_wd) * 0.5 * stretch_ratiow;
+
           $("#result").removeClass("d-none");
-          canvas.width = vf.videoWidth;
-          canvas.height = vf.videoHeight;
           var context = canvas.getContext('2d');
-          context.drawImage(vf, 0, 0, vf.videoWidth, vf.videoHeight)
+          context.drawImage(vf, 0, 0, streamw, streamh)
           $(vfcontainer).addClass("d-none");
+          context.lineWidth = "" + draw_thickness;
+          context.strokeStyle = "green";
+          context.translate((horizontaloffset+draw_thickness)*stretch_ratiow - horizontalxtra, 
+            (verticaloffset+draw_thickness)*stretch_ratioh - verticalxtra);
+          context.rect(0, 0, (boxw)*stretch_ratiow, (boxh)*stretch_ratioh);
+          context.stroke();
           var imgdat = canvas.toDataURL("image/png");
           $(canvas).addClass("d-none");
           $("#preview").attr("src", imgdat);
           $("#save-btn").attr("href", imgdat.replace("image/png", "image/octet-stream"));
-          vfstram.getVideoTracks()[0].stop()
+          vfstram.getVideoTracks()[0].stop();
         })
-
         init_viewfinder();
-        // var elem = document.documentElement;
-        // if (elem.requestFullscreen) {
-        //   elem.requestFullscreen();
-        // } else if (elem.mozRequestFullScreen) { /* Firefox */
-        //   elem.mozRequestFullScreen();
-        // } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-        //   elem.webkitRequestFullscreen();
-        // } else if (elem.msRequestFullscreen) { /* IE/Edge */
-        //   elem.msRequestFullscreen();
-        // }
       });
     </script>
   </body>
