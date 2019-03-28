@@ -11,8 +11,8 @@
       #viewfinder-container{
         position: relative;
         overflow: hidden;
-        height:90%;
-        margin: 1vh 1vw; 
+        display: block;
+        margin: 1vh auto; 
       }
       #overlay-border{
         position: absolute;
@@ -23,10 +23,9 @@
         z-index: 10;
       }
       #overlay-box{
-        width: 100%;
-        height: 100%;
         padding: 0;
-        margin: 0;
+        margin: 0 auto;
+        display: block;
         position: relative;
       }
       
@@ -83,7 +82,7 @@
         var box_side_len = 0.85*((view_width < view_height)? view_width:view_height);
         
         var vf = $("#viewfinder").css("width", box_side_len+"px").css("height", box_side_len+"px")[0];
-
+        $("#viewfinder-container").css("width", (box_side_len*1.1)+"px").css("height", (box_side_len*1.1)+"px");
 
         window.addEventListener("orientationchange", function() {
           if(camera_on){
