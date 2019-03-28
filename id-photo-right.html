@@ -265,11 +265,11 @@
                 //video.src = window.URL.createObjectURL(stream);
                 vf.srcObject = stream;
                 vfstram = stream;
-                if(on_iOS || true){
-                  $("#ios-workaround").removeClass("d-none");
-                }else{
+                // if(on_iOS){
+                //   $("#ios-workaround").removeClass("d-none");
+                // }else{
                   vf.play();
-                }
+                // }
             });
           }
         }
