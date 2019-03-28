@@ -80,8 +80,9 @@
         var view_height = $(window).height();
         var camera_on = false;
         var box_side_len = 0.85*((view_width < view_height)? view_width:view_height);
-        
-        var vf = $("#viewfinder").css("width", box_side_len+"px").css("height", box_side_len+"px")[0];
+        var vfstream;
+        var vf = $("#viewfinder")[0];
+        $(vf).css("width", box_side_len+"px").css("height", box_side_len+"px")[0];
         $("#viewfinder-container").css("width", (box_side_len)+"px").css("height", (box_side_len)+"px");
 
         window.addEventListener("orientationchange", function() {
@@ -132,7 +133,7 @@
             navigator.mediaDevices.getUserMedia(mediaConfig).then(function(stream) {
                 //video.src = window.URL.createObjectURL(stream);
                 vf.srcObject = stream;
-                vfstram = stream;
+                vfstream = stream;
                 // if(on_iOS){
                 //   $("#ios-workaround").removeClass("d-none");
                 // }else{
