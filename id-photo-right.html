@@ -82,12 +82,12 @@
             <button class="btn btn-primary" id="capture-btn">
               O
             </button>
-            <div class="d-none" id="ios-workaround">
+            <!-- <div class="d-none" id="ios-workaround">
               <p>Please align your id properly.</p>
               <button class="btn btn-dark btn-block" id="ios-play-btn">
                 OK, start cam
               </button>
-            </div>
+            </div> -->
             <video id="viewfinder" autoplay playsinline>
             </video>
           </div>
@@ -121,7 +121,7 @@
         var idw = 856.0; // According to wikipedia the KTP is 
         var idh = 540.0; // 856mm X 540mm.
         var vfstram;
-
+        var camera_on = false;
         var vfcontainer = $("#viewfinder-container")[0];
         var ob = $("#overlay-border")[0];
         var vf = $("#viewfinder")[0]
@@ -134,16 +134,18 @@
         $ob.css("border", draw_thickness+"px solid green");
 
         window.addEventListener("orientationchange", function() {
-          if(screen.orientation && screen.orientation.angle){
-            alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+          if(camera_on){
+            if(screen.orientation && screen.orientation.angle){
+              alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+            }
+            else if (screen.height && screen.width){
+              alert("The screen is now oriented to " + screen.width + "X" + screen.height + ". Must refresh page.");
+            }
+            else{
+              alert("Orientation change detected. Must refresh page.");
+            }
+            window.location.reload();
           }
-          else if (screen.height && screen.width){
-            alert("The screen is now oriented to " + screen.width + "X" + screen.height + ". Must refresh page.");
-          }
-          else{
-            alert("Orientation change detected. Must refresh page.");
-          }
-          window.location.reload();
         });
 
         //var vfc = $("#vfcanvas")[0];
@@ -151,12 +153,12 @@
           draw_box();
         })
 
-        $("#ios-play-btn").on("click", function(evt){
-          console.log("Clicked!");
-          vf.play();
-          evt.preventDefault();
-          $("#ios-workaround").addClass("d-none");
-        })
+        // $("#ios-play-btn").on("click", function(evt){
+        //   console.log("Clicked!");
+        //   vf.play();
+        //   evt.preventDefault();
+        //   $("#ios-workaround").addClass("d-none");
+        // })
         function init_markup_dimensions(){
           vfw = vf.clientWidth;
           vfh = vf.clientHeight;
@@ -233,6 +235,7 @@
         }
         var $vfp = $("#vfpreview");
         function init_viewfinder(){
+          camera_on = true;
           var front = false;
           var on_phone = false;
           var major_dimen = { min: 1024, ideal: 1280, max: 1920 };
@@ -275,6 +278,7 @@
         }
         $("#capture-btn").click(function(evt){
           evt.preventDefault();
+          camera_on = false;
           $("#result").removeClass("d-none");
           var vfcontext = vfcanvas.getContext('2d');
           vfcontext.drawImage(vf, 0, 0, streamw, streamh)
