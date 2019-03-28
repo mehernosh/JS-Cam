@@ -88,7 +88,7 @@
                 OK, start cam
               </button>
             </div>
-            <video id="viewfinder" autoplay>
+            <video id="viewfinder" autoplay playsinline>
             </video>
           </div>
           <div id="result" class="d-none">
@@ -134,7 +134,15 @@
         $ob.css("border", draw_thickness+"px solid green");
 
         window.addEventListener("orientationchange", function() {
-          alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+          if(screen.orientation && screen.orientation.angle){
+            alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+          }
+          else if (screen.height && screen.width){
+            alert("The screen is now oriented to " + screen.width + "X" + screen.height + ". Must refresh page.");
+          }
+          else{
+            alert("Orientation change detected. Must refresh page.");
+          }
           window.location.reload();
         });
 
