@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <title>Silhouette on selfie cam</title>
+    <style type="text/css">
+      #viewfinder-container{
+        position: relative;
+        overflow: hidden;
+        height:90%;
+        margin: 1vh 1vw; 
+      }
+      #overlay-border{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      #overlay-box{
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        position: relative;
+      }
+      
+      #silhouette-svg{
+        height: 100%;
+        width: 100%
+        margin: 0 auto;
+
+      }
+      #viewfinder{
+        margin-right: auto;
+        margin-left: auto;
+        display: block;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <div id="viewfinder-container">
+            <div id="overlay-border">
+              <div id="overlay-box">
+                <svg id="silhouette-svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="15 15 70 70" version="1.1" x="0px" y="0px">
+                  <g transform="translate(0,-952.36216)">
+                    <path style="" d="m 45.25,973.11216 c 3.079598,-1.27561 6.920402,-1.27561 10,0 2.177605,0.90199 4.098006,2.8224 5,5 1.913417,4.6194 1.913417,10.3806 0,15 -1.803987,4.35521 -5.285955,10.00004 -10,10.00004 -4.714045,0 -8.196013,-5.64483 -10,-10.00004 -1.913417,-4.6194 -1.913417,-10.3806 0,-15 0.901994,-2.1776 2.822395,-4.09801 5,-5 z" fill="none" stroke="#00de00" stroke-width="1px" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1"/>
+                    <path style="" d="m 42.5,997.36216 c 0,0 2.17812,7.57784 0.25,10.50004 -2.471491,3.7457 -8.693002,2.6239 -12.5,5 -2.002031,1.2495 -4.329387,2.577 -5.25,4.75 -1.919073,4.5297 0.5,14.75 0.5,14.75 l 49.25,0 c 0,0 1.881527,-10.2076 0,-14.75 -0.901994,-2.1776 -3.032261,-3.7025 -5,-5 -3.746464,-2.4704 -10.080116,-1.2207 -12.5,-5 -1.754818,-2.7406 0.5,-9.75004 0.5,-9.75004" fill="none" stroke="#00de00" stroke-width="1px" stroke-linecap="butt" stroke-linejoin="miter" stroke-opacity="1"/>
+                  </g>
+                  <!--
+                  <text x="0" y="115" fill="#000000" font-size="5px" font-weight="bold" font-family="'Helvetica Neue', Helvetica, Arial-Unicode, Arial, Sans-serif">
+                    Created by David Brown
+                  </text>
+                  <text x="0" y="120" fill="#000000" font-size="5px" font-weight="bold" font-family="'Helvetica Neue', Helvetica, Arial-Unicode, Arial, Sans-serif">
+                    from the Noun Project
+                  </text> 
+                  -->
+                </svg>
+              </div>
+            </div>
+            <video id="viewfinder" autoplay playsinline>
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      $(function(){
+        var view_width = $(window).width();
+        var view_height = $(window).height();
+        var camera_on = false;
+        var box_side_len = 0.85*((view_width < view_height)? view_width:view_height);
+        
+        var vf = $("#viewfinder").css("width", box_side_len+"px").css("height", box_side_len+"px")[0];
+
+
+        window.addEventListener("orientationchange", function() {
+          if(camera_on){
+            if(screen.orientation && screen.orientation.angle){
+              alert("The orientation of the device is now " + screen.orientation.angle +". Must refresh page.");
+            }
+            else if (screen.height && screen.width){
+              alert("The screen is now oriented to " + screen.width + "X" + screen.height + ". Must refresh page.");
+            }
+            else{
+              alert("Orientation change detected. Must refresh page.");
+            }
+            window.location.reload();
+          }
+        });
+
+        function init_viewfinder(){
+          camera_on = true;
+          var front = true;
+          var on_phone = false;
+          //var major_dimen = { min: 1024, ideal: 1280, max: 1920 };
+          var minor_dimen = { min: 576, ideal: 1280, max: 1920 };
+          if(navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/iPhone/i)){
+            on_phone = true;
+          }
+          var on_iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
+          if(on_phone) {
+            if(window.innerHeight> window.innerWidth)
+              $("#viewfinder-container").css("height",window.innerHeight*0.95+"px")
+          }else{
+            $(".container-fluid").css("width", (window.innerWidth*0.8)+"px");
+            $(".container-fluid").css("height", (window.innerWidth*720*0.8/1280)+"px");
+          }
+
+          var mediaConfig = {
+            video: { 
+              facingMode: (front? "user" : "environment"),
+              width: minor_dimen,
+              height: minor_dimen,
+            },
+          };
+          //vfc.height = vfcontainer.clientHeight;
+          //vfc.width = vfcontainer.clientWidth;
+
+          if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Not adding `{ audio: true }` since we only want video now
+            navigator.mediaDevices.getUserMedia(mediaConfig).then(function(stream) {
+                //video.src = window.URL.createObjectURL(stream);
+                vf.srcObject = stream;
+                vfstram = stream;
+                // if(on_iOS){
+                //   $("#ios-workaround").removeClass("d-none");
+                // }else{
+                  vf.play();
+                // }
+            });
+          }
+        }
+        init_viewfinder();
+
+
+      });
+    </script>
+  </body>
+</html>
