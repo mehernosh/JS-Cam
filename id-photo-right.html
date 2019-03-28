@@ -54,7 +54,7 @@
         position: absolute;
         z-index: 100;
       }
-      #preview{
+      #vfpreview{
         max-width: 90%;
         max-height: 90%
       }
@@ -79,8 +79,19 @@
           </div>
           <div id="result" class="d-none">
             <canvas id="vfcanvas"></canvas>
-            <img id="preview"><br>
-            <a download="captured.png" class="btn btn-success" id="save-btn">Save</a>
+            <canvas id="croppedcanvas" class="d-none"></canvas>
+            <img id="vfpreview" class="img-thumbnail"><br>
+            <a download="captured.png" class="btn btn-success" id="save-btn">
+              Download full image
+            </a>
+            <button class="btn btn-info" id="crop-btn">
+              Crop to bounds
+            </button>
+            <br>
+            <img id="croppedpreview" class="img-thumbnail">
+            <a download="cropped.png" class="btn btn-success d-none" id="save-cropped-btn">
+              Download cropped
+            </a>
           </div>
 
         </div>
@@ -99,7 +110,8 @@
         var vfcontainer = $("#viewfinder-container")[0];
         var ob = $("#overlay-border")[0];
         var vf = $("#viewfinder")[0]
-        var canvas = $('#vfcanvas')[0];
+        var vfcanvas = $('#vfcanvas')[0];
+        var croppedcanvas = $("#croppedcanvas")[0];
         var boxh, boxw, verticaloffset, horizontaloffset;
         var vfw, vfh, obw, obh, vf_orientation;
         var draw_thickness = 3;
@@ -117,16 +129,57 @@
 
         })
 
-        function init_dimensions(){
+        function init_markup_dimensions(){
           vfw = vf.clientWidth;
           vfh = vf.clientHeight;
           obw = ob.offsetWidth;
           obh = ob.offsetHeight;
           vf_orientation = vfh>vfw ? "vertical" : "horizontal";
         }
+        var streamw, streamh;
+        var canvas_boxdimens = [];
+
+        function prepare_img_processing_dimensions(){
+          vfcanvas.width = vf.videoWidth;
+          vfcanvas.height = vf.videoHeight;
+          streamw = vf.videoWidth;
+          streamh = vf.videoHeight;
+          var streamratio = (1.0 * streamw)/streamh;
+          var vfratio = (1.0 * vfw)/vfh;
+          var constrained_on = (vfratio > streamratio)? "height" : "width";
+          var stm_aparent_ht, stm_aparent_wd;
+          var horizontalxtra, verticalxtra;
+          var stretch_ratioh = 0, stretch_ratiow = 0;
+          // var drawh = $ob.outerHeight()*streamratio;
+          // var draww = $ob.outerWidth()*streamratio;
+
+          if(constrained_on === "height"){
+            stm_aparent_ht = vfh;
+            stm_aparent_wd = streamratio * stm_aparent_ht;
+            
+          }else{
+            stm_aparent_wd = vfw;
+            stm_aparent_ht = streamratio * stm_aparent_wd;
+          }
+          stretch_ratioh = 1.0 * streamh/stm_aparent_ht;
+          stretch_ratiow = 1.0 * streamw/stm_aparent_wd;
+          verticalxtra = (vfh - stm_aparent_ht) * 0.5 * stretch_ratioh;
+          horizontalxtra = (vfw - stm_aparent_wd) * 0.5 * stretch_ratiow;
+          canvas_boxdimens = [
+            [
+              (horizontaloffset+draw_thickness)*stretch_ratiow - horizontalxtra, 
+              (verticaloffset+draw_thickness)*stretch_ratioh - verticalxtra
+            ],
+            [
+              boxw*stretch_ratiow, boxh*stretch_ratioh
+            ]
+          ]
+          croppedcanvas.width = canvas_boxdimens[1][0];
+          croppedcanvas.height = canvas_boxdimens[1][1];
+        }
 
         function draw_box(){
-          init_dimensions();
+          init_markup_dimensions();
           if (vf_orientation === "horizontal"){
             boxh = vfh*0.7;
             boxw = boxh*idw/idh;
@@ -147,10 +200,10 @@
             "border-style", "solid").css(
             "border-color", "rgba(253, 45, 45, 0.61)");
           $(".photo-box."+vf_orientation).removeClass("d-none");
-          canvas.width = vf.videoWidth;
-          canvas.height = vf.videoHeight;
+          
+          prepare_img_processing_dimensions()
         }
-
+        var $vfp = $("#vfpreview");
         function init_viewfinder(){
           var front = false;
           var on_phone = false;
@@ -189,45 +242,39 @@
         }
         $("#capture-btn").click(function(evt){
           evt.preventDefault();
-          var streamw = vf.videoWidth, streamh = vf.videoHeight;
-          var streamratio = (1.0 * streamw)/streamh;
-          var vfratio = (1.0 * vfw)/vfh;
-          var constrained_on = (vfratio > streamratio)? "height" : "width";
-          var stm_aparent_ht, stm_aparent_wd;
-          var horizontalxtra, verticalxtra;
-          var stretch_ratioh = 0, stretch_ratiow = 0;
-          // var drawh = $ob.outerHeight()*streamratio;
-          // var draww = $ob.outerWidth()*streamratio;
-
-          if(constrained_on === "height"){
-            stm_aparent_ht = vfh;
-            stm_aparent_wd = streamratio * stm_aparent_ht;
-            
-          }else{
-            stm_aparent_wd = vfw;
-            stm_aparent_ht = streamratio * stm_aparent_wd;
-          }
-          stretch_ratioh = 1.0 * streamh/stm_aparent_ht;
-          stretch_ratiow = 1.0 * streamw/stm_aparent_wd;
-          verticalxtra = (vfh - stm_aparent_ht) * 0.5 * stretch_ratioh;
-          horizontalxtra = (vfw - stm_aparent_wd) * 0.5 * stretch_ratiow;
-
           $("#result").removeClass("d-none");
-          var context = canvas.getContext('2d');
-          context.drawImage(vf, 0, 0, streamw, streamh)
+          var vfcontext = vfcanvas.getContext('2d');
+          vfcontext.drawImage(vf, 0, 0, streamw, streamh)
           $(vfcontainer).addClass("d-none");
-          context.lineWidth = "" + draw_thickness;
-          context.strokeStyle = "green";
-          context.translate((horizontaloffset+draw_thickness)*stretch_ratiow - horizontalxtra, 
-            (verticaloffset+draw_thickness)*stretch_ratioh - verticalxtra);
-          context.rect(0, 0, (boxw)*stretch_ratiow, (boxh)*stretch_ratioh);
-          context.stroke();
-          var imgdat = canvas.toDataURL("image/png");
-          $(canvas).addClass("d-none");
-          $("#preview").attr("src", imgdat);
+          vfcontext.lineWidth = "" + draw_thickness;
+          vfcontext.strokeStyle = "green";
+          vfcontext.translate(canvas_boxdimens[0][0], canvas_boxdimens[0][1]);
+          vfcontext.rect(0, 0, canvas_boxdimens[1][0], canvas_boxdimens[1][1]);
+          vfcontext.stroke();
+          var imgdat = vfcanvas.toDataURL("image/png");
+          $(vfcanvas).addClass("d-none");
+          $vfp.attr("src", imgdat);
           $("#save-btn").attr("href", imgdat.replace("image/png", "image/octet-stream"));
           vfstram.getVideoTracks()[0].stop();
         })
+
+        function crop_captured(evt){
+          evt.preventDefault();
+          var croppedcontext = croppedcanvas.getContext("2d");
+          croppedcontext.drawImage($vfp[0], canvas_boxdimens[0][0], canvas_boxdimens[0][1],
+            canvas_boxdimens[1][0], canvas_boxdimens[1][1],
+            0,0,
+            canvas_boxdimens[1][0], canvas_boxdimens[1][1]
+          );
+          var imgdat = croppedcanvas.toDataURL("image/png");
+          $("#croppedpreview").attr("src", imgdat);
+          $("#save-cropped-btn").attr(
+            "href", imgdat.replace("image/png", "image/octet-stream")
+          ).removeClass("d-none");
+          $(this).addClass("d-none");
+        }
+
+        $("#crop-btn").on("click", crop_captured);
         init_viewfinder();
       });
     </script>
