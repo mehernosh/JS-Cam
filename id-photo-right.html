@@ -58,6 +58,14 @@
         max-width: 90%;
         max-height: 90%
       }
+      #ios-workaround{
+        position: absolute;
+        top:0;
+        left: 0;
+        height: 99%;
+        width: 99%;
+        z-index: 101;
+      }
     </style>
   </head>
   <body>
@@ -74,6 +82,12 @@
             <button class="btn btn-primary" id="capture-btn">
               O
             </button>
+            <div class="d-none" id="ios-workaround">
+              <p>Please align your id properly.</p>
+              <button class="btn btn-dark btn-block" id="ios-play-btn">
+                OK, start cam
+              </button>
+            </div>
             <video id="viewfinder" autoplay>
             </video>
           </div>
@@ -107,6 +121,7 @@
         var idw = 856.0; // According to wikipedia the KTP is 
         var idh = 540.0; // 856mm X 540mm.
         var vfstram;
+
         var vfcontainer = $("#viewfinder-container")[0];
         var ob = $("#overlay-border")[0];
         var vf = $("#viewfinder")[0]
@@ -126,9 +141,14 @@
         //var vfc = $("#vfcanvas")[0];
         $("#viewfinder").on("loadeddata", function(evt){
           draw_box();
-
         })
 
+        $("#ios-play-btn").on("click", function(evt){
+          console.log("Clicked!");
+          vf.play();
+          evt.preventDefault();
+          $("#ios-workaround").addClass("d-none");
+        })
         function init_markup_dimensions(){
           vfw = vf.clientWidth;
           vfh = vf.clientHeight;
@@ -212,6 +232,7 @@
           if(navigator.userAgent.match(/Android/i) || navigator.userAgent.match(/iPhone/i)){
             on_phone = true;
           }
+          var on_iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
           if(on_phone) {
             if(window.innerHeight> window.innerWidth)
               $("#viewfinder-container").css("height",window.innerHeight*0.95+"px")
@@ -236,7 +257,11 @@
                 //video.src = window.URL.createObjectURL(stream);
                 vf.srcObject = stream;
                 vfstram = stream;
-                vf.play();
+                if(on_iOS || true){
+                  $("#ios-workaround").removeClass("d-none");
+                }else{
+                  vf.play();
+                }
             });
           }
         }
