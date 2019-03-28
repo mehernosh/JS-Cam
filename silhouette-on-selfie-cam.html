@@ -82,7 +82,7 @@
         var box_side_len = 0.85*((view_width < view_height)? view_width:view_height);
         
         var vf = $("#viewfinder").css("width", box_side_len+"px").css("height", box_side_len+"px")[0];
-        $("#viewfinder-container").css("width", (box_side_len*1.1)+"px").css("height", (box_side_len*1.1)+"px");
+        $("#viewfinder-container").css("width", (box_side_len)+"px").css("height", (box_side_len)+"px");
 
         window.addEventListener("orientationchange", function() {
           if(camera_on){
